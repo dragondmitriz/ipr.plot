@@ -56,10 +56,7 @@ class SarMetrics:
         # Среднее время чтения/записи (устройство)
         # Среднее время выполнения чтения/записи: await
         # Среднее время обслуживания чтения/записи: svctm
-        self.disk_rw = TimelineMetrics('Среднее время чтения/записи',
-                                       'Среднее время выполнения чтения/записи',
-                                       'Среднее время обслуживания чтения/записи',
-                                       addY=True)
+        self.disk_rw = {}
 
         # Очередь дисковой подсистемы (устройство)
         # Очередь дисковой подсистемы: avgqu-sz
@@ -122,9 +119,14 @@ class SarMetrics:
                 self.template = self.template_kbmemfree
             elif sar_line[1] == 'kbswpfree':
                 self.template = self.template_kbswpfree
+            elif sar_line[1] == 'DEV':
+                self.template = self.template_DEV
             elif self.template is not None and is_digit(str(sar_line[2])) and sar_line[0] != 'Average:':
+                is_add_dev_line = True
+                if self.template == self.template_DEV:
+                    is_add_dev_line = False
                 for template in self.template:
-                    if (template['filter'] is None) or (template['filter'] == 'all' and sar_line[1] == 'all'):
+                    if (template['filter'] is None) or (template['filter'] == sar_line[1]):
                         mask_metrics = []
                         for index_mask in template['mask']:
                             if index_mask is None:
@@ -132,8 +134,17 @@ class SarMetrics:
                             else:
                                 mask_metrics.append(float(sar_line[index_mask]))
                         template['target'].add_value(sar_line[0], mask_metrics)
+                        is_add_dev_line = True
+                if not is_add_dev_line:
+                    self.disk_rw[sar_line[1]] = TimelineMetrics('Среднее время чтения/записи ' + sar_line[1],
+                                                                'Среднее время выполнения чтения/записи',
+                                                                'Среднее время обслуживания чтения/записи',
+                                                                addY=True)
+                    self.template.append({'target': self.disk_rw[sar_line[1]],
+                                          'filter': sar_line[1],
+                                          'mask': (7, 8)})
+                    self.add(sar_line)
             else:
-
                 self.template = None
 
     def set_file(self, filePath):
