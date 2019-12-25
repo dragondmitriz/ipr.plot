@@ -12,7 +12,7 @@ def update_index_graph(index_gr):
         index_gr[1] += 1
     if index_gr[0] >= size[0]:
         plt.show()
-        plt.figure(figsize=(16, 9))
+        fig = plt.figure(figsize=(16, 9))
         index_gr[0] = 0
         index_gr[1] = 0
     return (index_gr[0], index_gr[1])
@@ -164,6 +164,7 @@ for index_timeline in range(len(arr_metrics)):
     graph_disk_rw.set_xticks(range(0, len(arr_metrics[index_timeline].time), time_step))
     graph_disk_rw.set_xticklabels(arr_metrics[index_timeline].time[::time_step], fontdict={'fontsize': 12})
     graph_disk_rw.set_title(arr_metrics[index_timeline].graph, fontsize=16)
+    graph_disk_rw.legend()
     fig.tight_layout()
 # =================Finish Disk Read/Write graph============
 
