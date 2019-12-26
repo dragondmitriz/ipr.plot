@@ -44,6 +44,13 @@ for timeline_metrics in sar.disk_CPU.values():
     if sum(timeline_metrics.metrics[0]) != 0:
         arr_metrics_disk_CPU.append(timeline_metrics)
 
+# Подготовка данных для прорисовки графиков сетевых интерфейсов
+arr_metrics_net = []
+
+for timeline_metrics in sar.net.values():
+    if sum(timeline_metrics.metrics[0]) != 0:
+        arr_metrics_net.append(timeline_metrics)
+
 # Предварительные параметры графиков
 time_step = 40
 size = (2, 2)
@@ -133,7 +140,7 @@ for index_timeline in range(len(arr_metrics_disk_rw)):
 
     # Config limit value of axes 'x'
     x1, x2, y1, y2 = plt.axis()
-    plt.axis((x1, x2, 0, max(max(arr_metrics_disk_rw[index_timeline].metrics[0], arr_metrics_disk_rw[index_timeline].metrics[1]))*1.2//1+10))
+    plt.axis((x1, x2, 0, max(max(arr_metrics_disk_rw[index_timeline].metrics[0], arr_metrics_disk_rw[index_timeline].metrics[1]))*1.2//1+1))
 
     # =================Decorations Disk Read/Write graph===
     graph_disk_rw.tick_params(axis='x', rotation=0, labelsize=12)
@@ -194,6 +201,35 @@ for index_timeline in range(len(arr_metrics_disk_CPU)):
     graph_disk_CPU.set_title(arr_metrics_disk_CPU[index_timeline].graph, fontsize=16)
     fig.tight_layout()
 # =================Finish Disk CPU graph============
+
+# =================Network=========================
+for index_timeline in range(len(arr_metrics_net)):
+    graph_net = plt.subplot2grid(size, update_index_graph(index_graph))
+
+    graph_net.plot(arr_metrics_net[index_timeline].time,
+                       arr_metrics_net[index_timeline].metrics[0],
+                       label=arr_metrics_net[index_timeline].names[0])
+    graph_net.tick_params(axis='x', rotation=90)
+
+    graph_net.plot(arr_metrics_net[index_timeline].time, arr_metrics_net[index_timeline].metrics[1],
+                       label=arr_metrics_net[index_timeline].names[1])
+    graph_net.tick_params(axis='x', rotation=90)
+
+    # Config limit value of axes 'x'
+    x1, x2, y1, y2 = plt.axis()
+    plt.axis((x1, x2, 0, max(max(arr_metrics_net[index_timeline].metrics[0], arr_metrics_net[index_timeline].metrics[1]))*1.2//1+1))
+
+    # =================Decorations Network graph===
+    graph_net.tick_params(axis='x', rotation=0, labelsize=12)
+    graph_net.set_ylabel('Передача данных, Кб./с.', fontsize=12)
+    graph_net.tick_params(axis='y', rotation=0, labelsize=12)
+    graph_net.grid(alpha=.4)
+    graph_net.set_xticks(range(0, len(arr_metrics_net[index_timeline].time), time_step))
+    graph_net.set_xticklabels(arr_metrics_net[index_timeline].time[::time_step], fontdict={'fontsize': 12})
+    graph_net.set_title(arr_metrics_net[index_timeline].graph, fontsize=16)
+    graph_net.legend()
+    fig.tight_layout()
+# =================Finish Disk Network graph============
 
 # =================Load Average============================
 graph_load_avg = plt.subplot2grid(size, update_index_graph(index_graph))

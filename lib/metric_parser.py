@@ -69,7 +69,7 @@ class SarMetrics:
         # Утилизация сетевого интерфейса (интерфейс)
         # Передаваемые данные: txbyt/s | txkB/s
         # Принимаемые данные: rxbyt/s | rxkB/s
-        self.net = TimelineMetrics('Утилизация сетевого интерфейса', 'Передаваемые данные', 'Принимаемые данные')
+        self.net = {}
 
         # Динамика Load Average
         # за 1 минуту: ldavg-1
@@ -113,9 +113,9 @@ class SarMetrics:
                               'filter': 'dev',
                               'mask': (9,)}]
 
-        self.template_DEV = [{'target': self.disk_rw,
+        self.template_IFACE = [{'target': self.net,
                               'filter': 'dev',
-                              'mask': (7, 8)}]
+                              'mask': (4, 5)}]
 
         self.template = None
 
@@ -131,9 +131,11 @@ class SarMetrics:
                 self.template = self.template_kbswpfree
             elif sar_line[1] == 'DEV':
                 self.template = self.template_DEV
+            elif sar_line[1] == 'IFACE' and sar_line[2] == 'rxpck/s':
+                self.template = self.template_IFACE
             elif self.template is not None and is_digit(str(sar_line[2])) and sar_line[0] != 'Average:':
                 is_add_dev_line = True
-                if self.template == self.template_DEV:
+                if self.template == self.template_DEV or self.template == self.template_IFACE:
                     is_add_dev_line = False
                 for template in self.template:
                     if (template['filter'] is None) or (template['filter'] == sar_line[1]):
@@ -146,23 +148,32 @@ class SarMetrics:
                         template['target'].add_value(sar_line[0], mask_metrics)
                         is_add_dev_line = True
                 if not is_add_dev_line:
-                    self.disk_rw[sar_line[1]] = TimelineMetrics('Среднее время чтения/записи ' + sar_line[1],
-                                                                'Среднее время выполнения чтения/записи',
-                                                                'Среднее время обслуживания чтения/записи',
-                                                                addY=True)
-                    self.disk_qu[sar_line[1]] = TimelineMetrics('Очередь дисковой подсистемы' + sar_line[1],
-                                                                'Очередь диковой подсистемы')
-                    self.disk_CPU[sar_line[1]] = TimelineMetrics('Утилизация CPU дисковой подсистемой'+ sar_line[1],
-                                                                 'Утилизация CPU дисковой подсистемой')
-                    self.template.append({'target': self.disk_rw[sar_line[1]],
-                                          'filter': sar_line[1],
-                                          'mask': (7, 8)})
-                    self.template.append({'target': self.disk_qu[sar_line[1]],
-                                          'filter': sar_line[1],
-                                          'mask': (6,)})
-                    self.template.append({'target': self.disk_CPU[sar_line[1]],
-                                          'filter': sar_line[1],
-                                          'mask': (9,)})
+                    if self.template == self.template_DEV:
+                        self.disk_rw[sar_line[1]] = TimelineMetrics('Среднее время чтения/записи ' + sar_line[1],
+                                                                    'Среднее время выполнения чтения/записи',
+                                                                    'Среднее время обслуживания чтения/записи',
+                                                                    addY=True)
+                        self.disk_qu[sar_line[1]] = TimelineMetrics('Очередь дисковой подсистемы ' + sar_line[1],
+                                                                    'Очередь диковой подсистемы')
+                        self.disk_CPU[sar_line[1]] = TimelineMetrics(
+                            'Утилизация CPU дисковой подсистемой ' + sar_line[1],
+                            'Утилизация CPU дисковой подсистемой')
+                        self.template.append({'target': self.disk_rw[sar_line[1]],
+                                              'filter': sar_line[1],
+                                              'mask': (7, 8)})
+                        self.template.append({'target': self.disk_qu[sar_line[1]],
+                                              'filter': sar_line[1],
+                                              'mask': (6,)})
+                        self.template.append({'target': self.disk_CPU[sar_line[1]],
+                                              'filter': sar_line[1],
+                                              'mask': (9,)})
+                    elif self.template == self.template_IFACE:
+                        self.net[sar_line[1]] = TimelineMetrics('Утилизация сетевого интерфейса ' + sar_line[1],
+                                                                'Принимаемые данные',
+                                                                'Передаваемые данные')
+                        self.template.append({'target': self.net[sar_line[1]],
+                                              'filter': sar_line[1],
+                                              'mask': (4, 5)})
                     self.add(sar_line)
             else:
                 self.template = None
