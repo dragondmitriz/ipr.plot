@@ -60,11 +60,11 @@ class SarMetrics:
 
         # Очередь дисковой подсистемы (устройство)
         # Очередь дисковой подсистемы: avgqu-sz
-        self.disk_qu = TimelineMetrics('Очередь дисковой подсистемы', 'Очередь диковой подсистемы')
+        self.disk_qu = {}
 
         # Утилизация CPU дисковой подсистемой (устройство)
         # Утилизация CPU дисковой подсистемой: %util
-        self.disk_CPU = TimelineMetrics('Утилизация CPU дисковой подсистемой', 'Утилизация CPU дисковой подсистемой')
+        self.disk_CPU = {}
 
         # Утилизация сетевого интерфейса (интерфейс)
         # Передаваемые данные: txbyt/s | txkB/s
@@ -105,6 +105,16 @@ class SarMetrics:
 
         self.template_DEV = [{'target': self.disk_rw,
                               'filter': 'dev',
+                              'mask': (7, 8)},
+                             {'target': self.disk_qu,
+                              'filter': 'dev',
+                              'mask': (6,)},
+                             {'target': self.disk_CPU,
+                              'filter': 'dev',
+                              'mask': (9,)}]
+
+        self.template_DEV = [{'target': self.disk_rw,
+                              'filter': 'dev',
                               'mask': (7, 8)}]
 
         self.template = None
@@ -140,9 +150,19 @@ class SarMetrics:
                                                                 'Среднее время выполнения чтения/записи',
                                                                 'Среднее время обслуживания чтения/записи',
                                                                 addY=True)
+                    self.disk_qu[sar_line[1]] = TimelineMetrics('Очередь дисковой подсистемы' + sar_line[1],
+                                                                'Очередь диковой подсистемы')
+                    self.disk_CPU[sar_line[1]] = TimelineMetrics('Утилизация CPU дисковой подсистемой'+ sar_line[1],
+                                                                 'Утилизация CPU дисковой подсистемой')
                     self.template.append({'target': self.disk_rw[sar_line[1]],
                                           'filter': sar_line[1],
                                           'mask': (7, 8)})
+                    self.template.append({'target': self.disk_qu[sar_line[1]],
+                                          'filter': sar_line[1],
+                                          'mask': (6,)})
+                    self.template.append({'target': self.disk_CPU[sar_line[1]],
+                                          'filter': sar_line[1],
+                                          'mask': (9,)})
                     self.add(sar_line)
             else:
                 self.template = None

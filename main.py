@@ -24,11 +24,25 @@ sar.set_file("sar_mpgu_izh.csv")
 fig = plt.figure(figsize=(16, 9))
 
 # Подготовка данных для прорисовки графиков диска метрик чтения/записи
-arr_metrics = []
+arr_metrics_disk_rw = []
 
 for timeline_metrics in sar.disk_rw.values():
     if sum(timeline_metrics.metrics[0]) != 0:
-        arr_metrics.append(timeline_metrics)
+        arr_metrics_disk_rw.append(timeline_metrics)
+
+# Подготовка данных для прорисовки графиков дисковой очереди
+arr_metrics_disk_qu = []
+
+for timeline_metrics in sar.disk_qu.values():
+    if sum(timeline_metrics.metrics[0]) != 0:
+        arr_metrics_disk_qu.append(timeline_metrics)
+
+# Подготовка данных для прорисовки графиков дискового CPU
+arr_metrics_disk_CPU = []
+
+for timeline_metrics in sar.disk_CPU.values():
+    if sum(timeline_metrics.metrics[0]) != 0:
+        arr_metrics_disk_CPU.append(timeline_metrics)
 
 # Предварительные параметры графиков
 time_step = 40
@@ -53,7 +67,7 @@ graph_runq.plot(sar.CPU.time, sar.CPU.metrics[1], color='tab:red')
 
 # Config limit value of axes 'x' for runq-sz
 x1, x2, y1, y2 = plt.axis()
-plt.axis((x1, x2, 0, max(sar.CPU.metrics[1]) + 1))
+plt.axis((x1, x2, 0, max(sar.CPU.metrics[1])*1.2//1+1))
 
 # =================Decorations CPU graph==================
 graph_cpu.tick_params(axis='x', rotation=0, labelsize=12)
@@ -79,14 +93,14 @@ graph_memory.tick_params(axis='x', rotation=90)
 
 # C onfig limit value of axes 'x'
 x1, x2, y1, y2 = plt.axis()
-plt.axis((x1, x2, 0, max(sar.memory.metrics[0]) + 1))
+plt.axis((x1, x2, 0, max(sar.memory.metrics[0])*1.2//1+1))
 
 graph_swp = graph_memory.twinx()
 graph_swp.plot(sar.memory.time, sar.memory.metrics[1], color='tab:red')
 
 # Config limit value of axes 'x'
 x1, x2, y1, y2 = plt.axis()
-plt.axis((x1, x2, 0, max(sar.memory.metrics[1]) + 1))
+plt.axis((x1, x2, 0, max(sar.memory.metrics[1])*1.2//1+1))
 
 # =================Decorations memory graph================
 graph_memory.tick_params(axis='x', rotation=0, labelsize=12)
@@ -104,6 +118,83 @@ graph_swp.set_title("Утилизация памяти", fontsize=16)
 fig.tight_layout()
 # =================Finish decoration memory graph==========
 
+# =================Disk Read/Write=========================
+for index_timeline in range(len(arr_metrics_disk_rw)):
+    graph_disk_rw = plt.subplot2grid(size, update_index_graph(index_graph))
+
+    graph_disk_rw.plot(arr_metrics_disk_rw[index_timeline].time,
+                       arr_metrics_disk_rw[index_timeline].metrics[0],
+                       label=arr_metrics_disk_rw[index_timeline].names[0])
+    graph_disk_rw.tick_params(axis='x', rotation=90)
+
+    graph_disk_rw.plot(sar.load_avg.time, arr_metrics_disk_rw[index_timeline].metrics[1],
+                       label=arr_metrics_disk_rw[index_timeline].names[1])
+    graph_disk_rw.tick_params(axis='x', rotation=90)
+
+    # Config limit value of axes 'x'
+    x1, x2, y1, y2 = plt.axis()
+    plt.axis((x1, x2, 0, max(max(arr_metrics_disk_rw[index_timeline].metrics[0], arr_metrics_disk_rw[index_timeline].metrics[1]))*1.2//1+10))
+
+    # =================Decorations Disk Read/Write graph===
+    graph_disk_rw.tick_params(axis='x', rotation=0, labelsize=12)
+    graph_disk_rw.set_ylabel('Время, мс.', fontsize=12)
+    graph_disk_rw.tick_params(axis='y', rotation=0, labelsize=12)
+    graph_disk_rw.grid(alpha=.4)
+    graph_disk_rw.set_xticks(range(0, len(arr_metrics_disk_rw[index_timeline].time), time_step))
+    graph_disk_rw.set_xticklabels(arr_metrics_disk_rw[index_timeline].time[::time_step], fontdict={'fontsize': 12})
+    graph_disk_rw.set_title(arr_metrics_disk_rw[index_timeline].graph, fontsize=16)
+    graph_disk_rw.legend()
+    fig.tight_layout()
+# =================Finish Disk Read/Write graph============
+
+# =================Disk Queue=========================
+for index_timeline in range(len(arr_metrics_disk_qu)):
+    graph_disk_qu = plt.subplot2grid(size, update_index_graph(index_graph))
+
+    graph_disk_qu.plot(arr_metrics_disk_qu[index_timeline].time,
+                       arr_metrics_disk_qu[index_timeline].metrics[0],
+                       label=arr_metrics_disk_qu[index_timeline].names[0])
+    graph_disk_qu.tick_params(axis='x', rotation=90)
+
+    # Config limit value of axes 'x'
+    x1, x2, y1, y2 = plt.axis()
+    plt.axis((x1, x2, 0, max(arr_metrics_disk_qu[index_timeline].metrics[0])*1.2//1+1))
+
+    # =================Decorations Disk Queue graph===
+    graph_disk_qu.tick_params(axis='x', rotation=0, labelsize=12)
+    graph_disk_qu.set_ylabel('Очередь дисковой подсистемы, шт.', fontsize=12)
+    graph_disk_qu.tick_params(axis='y', rotation=0, labelsize=12)
+    graph_disk_qu.grid(alpha=.4)
+    graph_disk_qu.set_xticks(range(0, len(arr_metrics_disk_qu[index_timeline].time), time_step))
+    graph_disk_qu.set_xticklabels(arr_metrics_disk_qu[index_timeline].time[::time_step], fontdict={'fontsize': 12})
+    graph_disk_qu.set_title(arr_metrics_disk_qu[index_timeline].graph, fontsize=16)
+    fig.tight_layout()
+# =================Finish Disk Queue graph============
+
+# =================Disk CPU=========================
+for index_timeline in range(len(arr_metrics_disk_CPU)):
+    graph_disk_CPU = plt.subplot2grid(size, update_index_graph(index_graph))
+
+    graph_disk_CPU.plot(arr_metrics_disk_CPU[index_timeline].time,
+                       arr_metrics_disk_CPU[index_timeline].metrics[0],
+                       label=arr_metrics_disk_CPU[index_timeline].names[0])
+    graph_disk_CPU.tick_params(axis='x', rotation=90)
+
+    # Config limit value of axes 'x'
+    x1, x2, y1, y2 = plt.axis()
+    plt.axis((x1, x2, 0, max(arr_metrics_disk_CPU[index_timeline].metrics[0])*1.2//1+1))
+
+    # =================Decorations Disk CPU graph===
+    graph_disk_CPU.tick_params(axis='x', rotation=0, labelsize=12)
+    graph_disk_CPU.set_ylabel('Утилизация CPU, %.', fontsize=12)
+    graph_disk_CPU.tick_params(axis='y', rotation=0, labelsize=12)
+    graph_disk_CPU.grid(alpha=.4)
+    graph_disk_CPU.set_xticks(range(0, len(arr_metrics_disk_CPU[index_timeline].time), time_step))
+    graph_disk_CPU.set_xticklabels(arr_metrics_disk_CPU[index_timeline].time[::time_step], fontdict={'fontsize': 12})
+    graph_disk_CPU.set_title(arr_metrics_disk_CPU[index_timeline].graph, fontsize=16)
+    fig.tight_layout()
+# =================Finish Disk CPU graph============
+
 # =================Load Average============================
 graph_load_avg = plt.subplot2grid(size, update_index_graph(index_graph))
 
@@ -112,21 +203,21 @@ graph_load_avg.tick_params(axis='x', rotation=90)
 
 # C onfig limit value of axes 'x'
 x1, x2, y1, y2 = plt.axis()
-plt.axis((x1, x2, 0, max(sar.load_avg.metrics[0]) + 1))
+plt.axis((x1, x2, 0, max(sar.load_avg.metrics[0])*1.2//1+1))
 
 graph_load_avg.plot(sar.load_avg.time, sar.load_avg.metrics[1], label='5 мин.')
 graph_load_avg.tick_params(axis='x', rotation=90)
 
 # C onfig limit value of axes 'x'
 x1, x2, y1, y2 = plt.axis()
-plt.axis((x1, x2, 0, max(sar.load_avg.metrics[1]) + 1))
+plt.axis((x1, x2, 0, max(sar.load_avg.metrics[1])*1.2//1+1))
 
 graph_load_avg.plot(sar.load_avg.time, sar.load_avg.metrics[2], label='15 мин.')
 graph_load_avg.tick_params(axis='x', rotation=90)
 
 # C onfig limit value of axes 'x'
 x1, x2, y1, y2 = plt.axis()
-plt.axis((x1, x2, 0, max(sar.load_avg.metrics[2]) + 1))
+plt.axis((x1, x2, 0, max(sar.load_avg.metrics[2])*1.2//1+1))
 # =================Decorations Load Average graph==========
 graph_load_avg.tick_params(axis='x', rotation=0, labelsize=12)
 graph_load_avg.set_ylabel('Динамика Load Average', fontsize=12)
@@ -139,33 +230,5 @@ graph_load_avg.legend()
 fig.tight_layout()
 # =================Finish decoration Load Average graph====
 
-# =================Disk Read/Write=========================
-for index_timeline in range(len(arr_metrics)):
-    graph_disk_rw = plt.subplot2grid(size, update_index_graph(index_graph))
-
-    graph_disk_rw.plot(arr_metrics[index_timeline].time,
-                       arr_metrics[index_timeline].metrics[0],
-                       label=arr_metrics[index_timeline].names[0])
-    graph_disk_rw.tick_params(axis='x', rotation=90)
-
-    graph_disk_rw.plot(sar.load_avg.time, arr_metrics[index_timeline].metrics[1],
-                       label=arr_metrics[index_timeline].names[1])
-    graph_disk_rw.tick_params(axis='x', rotation=90)
-
-    # Config limit value of axes 'x'
-    x1, x2, y1, y2 = plt.axis()
-    plt.axis((x1, x2, 0, max(max(arr_metrics[index_timeline].metrics[0], arr_metrics[index_timeline].metrics[1]))+10))
-
-    # =================Decorations Disk Read/Write graph===
-    graph_disk_rw.tick_params(axis='x', rotation=0, labelsize=12)
-    graph_disk_rw.set_ylabel('Время, мс.', fontsize=12)
-    graph_disk_rw.tick_params(axis='y', rotation=0, labelsize=12)
-    graph_disk_rw.grid(alpha=.4)
-    graph_disk_rw.set_xticks(range(0, len(arr_metrics[index_timeline].time), time_step))
-    graph_disk_rw.set_xticklabels(arr_metrics[index_timeline].time[::time_step], fontdict={'fontsize': 12})
-    graph_disk_rw.set_title(arr_metrics[index_timeline].graph, fontsize=16)
-    graph_disk_rw.legend()
-    fig.tight_layout()
-# =================Finish Disk Read/Write graph============
 
 plt.show()
